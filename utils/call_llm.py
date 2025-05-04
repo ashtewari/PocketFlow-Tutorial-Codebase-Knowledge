@@ -3,6 +3,9 @@ import os
 import logging
 import json
 from datetime import datetime
+import dotenv
+from dotenv import find_dotenv
+dotenv.load_dotenv(find_dotenv())
 
 # Configure logging
 log_directory = os.getenv("LOG_DIR", "logs")
@@ -19,6 +22,10 @@ logger.addHandler(file_handler)
 
 # Simple cache configuration
 cache_file = "llm_cache.json"
+
+def test_llm():
+    api_key=os.getenv("GEMINI_API_KEY", "your-api_key")
+    ## print(f"API Key: {api_key}")
 
 # By default, we Google Gemini 2.5 pro, as it shows great performance for code understanding
 def call_llm(prompt: str, use_cache: bool = True) -> str:
@@ -42,16 +49,16 @@ def call_llm(prompt: str, use_cache: bool = True) -> str:
             return cache[prompt]
     
     # Call the LLM if not in cache or cache disabled
-    client = genai.Client(
-        vertexai=True, 
-        # TODO: change to your own project id and location
-        project=os.getenv("GEMINI_PROJECT_ID", "your-project-id"),
-        location=os.getenv("GEMINI_LOCATION", "us-central1")
-    )
-    # You can comment the previous line and use the AI Studio key instead:
     # client = genai.Client(
-    #     api_key=os.getenv("GEMINI_API_KEY", "your-api_key"),
+    #     vertexai=True, 
+    #     # TODO: change to your own project id and location
+    #     project=os.getenv("GEMINI_PROJECT_ID", "your-project-id"),
+    #     location=os.getenv("GEMINI_LOCATION", "us-central1")
     # )
+    # You can comment the previous line and use the AI Studio key instead:
+    client = genai.Client(
+        api_key=os.getenv("GEMINI_API_KEY", "your-api_key"),
+    )
     model = os.getenv("GEMINI_MODEL", "gemini-2.5-pro-exp-03-25")
     response = client.models.generate_content(
         model=model,
