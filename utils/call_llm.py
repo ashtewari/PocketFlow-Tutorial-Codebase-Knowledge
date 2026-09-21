@@ -4,6 +4,11 @@ import logging
 import json
 import requests
 from datetime import datetime
+import dotenv
+
+# Load environment variables from .env so this module works when run
+# directly (e.g. `python utils/call_llm.py`), not just via main.py
+dotenv.load_dotenv()
 
 # Configure logging
 log_directory = os.getenv("LOG_DIR", "logs")
