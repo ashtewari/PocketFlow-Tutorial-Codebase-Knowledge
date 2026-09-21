@@ -7,6 +7,17 @@ from utils.call_llm import call_llm
 from utils.crawl_local_files import crawl_local_files
 
 
+# Helper to pull YAML content out of an LLM response, tolerating responses
+# that omit the ```yaml fence entirely (some models don't add it).
+def extract_yaml(response: str) -> str:
+    text = response.strip()
+    if "```yaml" in text:
+        return text.split("```yaml", 1)[1].split("```")[0].strip()
+    if "```" in text:
+        return text.split("```", 1)[1].split("```")[0].strip()
+    return text
+
+
 # Helper to get content for specific file indices
 def get_content_for_indices(files_data, indices):
     content_map = {}
@@ -176,7 +187,7 @@ Format the output as a YAML list of dictionaries:
         response = call_llm(prompt, use_cache=(use_cache and self.cur_retry == 0))  # Use cache only if enabled and not retrying
 
         # --- Validation ---
-        yaml_str = response.strip().split("```yaml")[1].split("```")[0].strip()
+        yaml_str = extract_yaml(response)
         abstractions = yaml.safe_load(yaml_str)
 
         if not isinstance(abstractions, list):
@@ -347,7 +358,7 @@ Now, provide the YAML output:
         response = call_llm(prompt, use_cache=(use_cache and self.cur_retry == 0)) # Use cache only if enabled and not retrying
 
         # --- Validation ---
-        yaml_str = response.strip().split("```yaml")[1].split("```")[0].strip()
+        yaml_str = extract_yaml(response)
         relationships_data = yaml.safe_load(yaml_str)
 
         if not isinstance(relationships_data, dict) or not all(
@@ -489,7 +500,7 @@ Now, provide the YAML output:
         response = call_llm(prompt, use_cache=(use_cache and self.cur_retry == 0)) # Use cache only if enabled and not retrying
 
         # --- Validation ---
-        yaml_str = response.strip().split("```yaml")[1].split("```")[0].strip()
+        yaml_str = extract_yaml(response)
         ordered_indices_raw = yaml.safe_load(yaml_str)
 
         if not isinstance(ordered_indices_raw, list):

@@ -47,6 +47,8 @@ def get_llm_provider():
     provider = os.getenv("LLM_PROVIDER")
     if not provider and (os.getenv("GEMINI_PROJECT_ID") or os.getenv("GEMINI_API_KEY")):
         provider = "GEMINI"
+    if not provider:
+        provider = "OPENROUTER"  # Default to OpenRouter when nothing else is configured
     # if necessary, add ANTHROPIC/OPENAI
     return provider
 
@@ -55,18 +57,15 @@ def _call_llm_provider(prompt: str) -> str:
     """
     Call an LLM provider based on environment variables.
     Environment variables:
-    - LLM_PROVIDER: "OLLAMA" or "XAI"
-    - <provider>_MODEL: Model name (e.g., OLLAMA_MODEL, XAI_MODEL)
-    - <provider>_BASE_URL: Base URL without endpoint (e.g., OLLAMA_BASE_URL, XAI_BASE_URL)
-    - <provider>_API_KEY: API key (e.g., OLLAMA_API_KEY, XAI_API_KEY; optional for providers that don't require it)
+    - LLM_PROVIDER: "OPENROUTER" (default), "OLLAMA", "XAI", etc.
+    - <provider>_MODEL: Model name (e.g., OPENROUTER_MODEL, OLLAMA_MODEL, XAI_MODEL)
+    - <provider>_BASE_URL: Base URL without endpoint (e.g., OPENROUTER_BASE_URL, OLLAMA_BASE_URL, XAI_BASE_URL)
+    - <provider>_API_KEY: API key (e.g., OPENROUTER_API_KEY, OLLAMA_API_KEY, XAI_API_KEY; optional for providers that don't require it)
     The endpoint /v1/chat/completions will be appended to the base URL.
     """
     logger.info(f"PROMPT: {prompt}") # log the prompt
 
-    # Read the provider from environment variable
-    provider = os.environ.get("LLM_PROVIDER")
-    if not provider:
-        raise ValueError("LLM_PROVIDER environment variable is required")
+    provider = get_llm_provider()
 
     # Construct the names of the other environment variables
     model_var = f"{provider}_MODEL"
@@ -77,6 +76,12 @@ def _call_llm_provider(prompt: str) -> str:
     model = os.environ.get(model_var)
     base_url = os.environ.get(base_url_var)
     api_key = os.environ.get(api_key_var, "")  # API key is optional, default to empty string
+
+    # OpenRouter has a fixed, well-known base URL, so default it if not overridden
+    if provider == "OPENROUTER":
+        base_url = base_url or "https://openrouter.ai/api"
+        if not api_key:
+            raise ValueError("OPENROUTER_API_KEY environment variable is required")
 
     # Validate required variables
     if not model:
@@ -124,7 +129,7 @@ def _call_llm_provider(prompt: str) -> str:
     except ValueError:
         raise Exception(f"Failed to parse response as JSON from {provider}. The server might have returned an invalid response.")
 
-# By default, we Google Gemini 2.5 pro, as it shows great performance for code understanding
+# By default, we use OpenRouter (set GEMINI_API_KEY/GEMINI_PROJECT_ID to use Gemini instead)
 def call_llm(prompt: str, use_cache: bool = True) -> str:
     # Log the prompt
     logger.info(f"PROMPT: {prompt}")
